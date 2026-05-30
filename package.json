@@ -12,7 +12,9 @@
     "preview": "vite preview",
     "test": "jest --config server/jest.config.js --testPathPattern=\\.spec\\.ts$",
     "test:ai": "jest --config server/jest.config.js --testPathPattern=ai.service",
-    "test:ai:api": "node scripts/test-ai-api.js"
+    "test:ai:api": "node scripts/test-ai-api.js",
+    "test:contact": "node scripts/test-contact-api.js",
+    "test:unisender": "node scripts/test-unisender-sandbox.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

@@ -100,19 +100,45 @@ render.yaml      — конфиг деплоя на Render
 
 [Конфигурация SMTP](https://go2.unisender.ru/ru/settings/smtp-configuration)
 
-На **Render Free** SMTP-порт 587 [заблокирован платформой](https://render.com/docs/free) — backend автоматически отправляет через **HTTP API** Unisender Go (тот же `SMTP_PASS`). Локально — обычный SMTP.
+На **Render Free** SMTP-порт 587 [заблокирован](https://render.com/docs/free) — backend отправляет через **HTTP API** (тот же `SMTP_PASS`).
+
+#### Sandbox-домен (тест)
+
+1. Unisender Go → **Домены отправки** → «Получить тестовый домен»
+2. **Подтверждённые email-адреса** → добавьте `OWNER_EMAIL` и email для тестов формы
+3. В `.env` / Render:
+
+| Переменная | Значение |
+|------------|----------|
+| `UNISENDER_SANDBOX_DOMAIN` | `sandbox-8227938-990634.unigosendbox.com` |
+| `MAIL_FROM` | `test@sandbox-8227938-990634.unigosendbox.com` |
+| `SMTP_USER` | числовой логин (`8227938`) |
+| `SMTP_PASS` | пароль из «Конфигурация SMTP» |
+| `OWNER_EMAIL` | **подтверждённый** email получателя |
+
+> Sandbox: письма можно отправлять **только на подтверждённые адреса** (в т.ч. email в поле формы).
+
+**Тест sandbox API:**
+
+```bash
+npm run test:unisender
+npm run test:contact
+API_URL=https://akula-team-leader.onrender.com npm run test:contact
+```
+
+#### Переменные (prod / локально)
 
 | Переменная | Значение |
 |------------|----------|
 | `SMTP_HOST` | `smtp.go2.unisender.ru` |
 | `SMTP_PORT` | `587` |
-| `SMTP_SECURE` | `false` (TLS/STARTTLS) |
-| `SMTP_USER` | числовой логин из кабинета |
-| `SMTP_PASS` | пароль из «Конфигурация SMTP» |
-| `MAIL_FROM` | подтверждённый email отправителя |
+| `SMTP_SECURE` | `false` |
+| `SMTP_USER` | числовой логин |
+| `SMTP_PASS` | пароль SMTP / API |
+| `MAIL_FROM` | sandbox или подтверждённый email |
 | `OWNER_EMAIL` | куда приходят заявки |
 
-На **Render** задайте те же переменные в **Environment** → **Manual Deploy**.
+На **Render** → **Environment** → **Manual Deploy**.
 
 ### Полный цикл
 

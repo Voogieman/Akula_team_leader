@@ -65,7 +65,6 @@ async function postEmail(
         from_email: options.fromEmail,
         from_name: options.fromName,
         reply_to: options.replyTo,
-        skip_unsubscribe: 1,
         body: {
           html: options.html,
           plaintext: options.text,

@@ -19,8 +19,10 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
+      - key: UNISENDER_SANDBOX_DOMAIN
+        value: sandbox-8227938-990634.unigosendbox.com
       - key: MAIL_FROM
-        sync: false
+        value: test@sandbox-8227938-990634.unigosendbox.com
       - key: OWNER_EMAIL
         sync: false
       - key: OPENAI_API_KEY

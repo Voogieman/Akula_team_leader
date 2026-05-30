@@ -24,13 +24,25 @@ export class MailService {
 
   private resolveFromEmail(): string | null {
     const mailFrom = this.config.get<string>('MAIL_FROM')?.trim();
+    if (mailFrom) return mailFrom;
+
+    const sandboxDomain = this.config.get<string>('UNISENDER_SANDBOX_DOMAIN')?.trim();
+    if (sandboxDomain) {
+      const localPart =
+        this.config.get<string>('UNISENDER_SANDBOX_LOCAL')?.trim() || 'test';
+      return `${localPart}@${sandboxDomain}`;
+    }
+
     const ownerEmail = this.config.get<string>('OWNER_EMAIL')?.trim();
     const smtpUser = this.config.get<string>('SMTP_USER')?.trim();
 
-    if (mailFrom) return mailFrom;
     if (ownerEmail) return ownerEmail;
     if (smtpUser?.includes('@')) return smtpUser;
     return null;
+  }
+
+  private isSandboxMode(): boolean {
+    return Boolean(this.config.get<string>('UNISENDER_SANDBOX_DOMAIN')?.trim());
   }
 
   private resolveUnisenderApiUrl(): string {
@@ -149,15 +161,29 @@ export class MailService {
 
     if (message.includes('401') || message.includes('403')) {
       if (message.includes('domain') || message.includes('backend')) {
+        const sandboxHint = this.isSandboxMode()
+          ? ' Укажите MAIL_FROM=test@ваш-sandbox.unigosendbox.com.'
+          : '';
         throw new ServiceUnavailableException({
           ok: false,
-          message:
-            'Подтвердите email отправителя (MAIL_FROM) в Unisender Go → Настройки отправителя.',
+          message: `Подтвердите отправителя (MAIL_FROM) в Unisender Go.${sandboxHint}`,
         });
       }
       throw new ServiceUnavailableException({
         ok: false,
         message: 'Неверный SMTP_PASS / API-ключ Unisender Go.',
+      });
+    }
+
+    if (
+      message.includes('recipient') ||
+      message.includes('not verified') ||
+      message.includes('not allowed')
+    ) {
+      throw new ServiceUnavailableException({
+        ok: false,
+        message:
+          'Sandbox: получатель не подтверждён. Добавьте email в Unisender Go → Подтверждённые email-адреса.',
       });
     }
 
@@ -202,7 +228,11 @@ export class MailService {
       });
     }
 
-    this.logger.log('Mail transport: Unisender Go HTTP API (Render — SMTP порт 587 заблокирован)');
+    this.logger.log(
+      this.isSandboxMode()
+        ? `Mail transport: Unisender Go HTTP API (sandbox: ${content.fromEmail})`
+        : 'Mail transport: Unisender Go HTTP API (Render — SMTP порт 587 заблокирован)',
+    );
 
     await sendViaUnisenderHttp(apiKey, this.resolveUnisenderApiUrl(), content);
   }
@@ -220,8 +250,8 @@ export class MailService {
 
     const content = this.buildMailContent(data, ownerEmail, fromEmail);
 
-    // Render Free блокирует исходящий SMTP (порт 587) — только HTTP API
-    if (process.env.RENDER) {
+    // Render Free блокирует SMTP; sandbox на Render — только HTTP API
+    if (process.env.RENDER || this.isSandboxMode()) {
       try {
         await this.sendViaUnisenderApi(content);
       } catch (error) {
