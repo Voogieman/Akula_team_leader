@@ -67,7 +67,7 @@ render.yaml      — конфиг деплоя на Render
 |-------|------------|
 | Frontend | HTML5, SCSS, TypeScript, Vite |
 | Backend | Node.js, NestJS, Zod |
-| Почта | Nodemailer, SMTP (Unisender Go) |
+| Почта | Nodemailer + Unisender Go SMTP (локально) / HTTP API на Render Free |
 | AI | OpenAI API через ProxyAPI, модель `gpt-4o-mini` |
 | Тесты | Jest |
 
@@ -99,6 +99,8 @@ render.yaml      — конфиг деплоя на Render
 ### Настройка SMTP (Unisender Go)
 
 [Конфигурация SMTP](https://go2.unisender.ru/ru/settings/smtp-configuration)
+
+На **Render Free** SMTP-порт 587 [заблокирован платформой](https://render.com/docs/free) — backend автоматически отправляет через **HTTP API** Unisender Go (тот же `SMTP_PASS`). Локально — обычный SMTP.
 
 | Переменная | Значение |
 |------------|----------|
