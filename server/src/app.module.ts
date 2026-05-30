@@ -9,8 +9,15 @@ import { AiModule } from './ai/ai.module';
 import { ContactModule } from './contact/contact.module';
 import { HealthController } from './health/health.controller';
 
-const clientRoot = join(__dirname, 'client');
-const serveClient = existsSync(join(clientRoot, 'index.html'));
+function resolveClientRoot(): string | null {
+  const candidates = [
+    join(__dirname, 'client'),
+    join(process.cwd(), 'dist', 'client'),
+  ];
+  return candidates.find((dir) => existsSync(join(dir, 'index.html'))) ?? null;
+}
+
+const clientRoot = resolveClientRoot();
 
 @Module({
   imports: [
@@ -18,7 +25,7 @@ const serveClient = existsSync(join(clientRoot, 'index.html'));
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 15 * 60 * 1000, limit: 30 }],
     }),
-    ...(serveClient
+    ...(clientRoot
       ? [
           ServeStaticModule.forRoot({
             rootPath: clientRoot,
