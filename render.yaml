@@ -24,7 +24,7 @@ services:
       - key: UNISENDER_API_KEY
         sync: false
       - key: UNISENDER_API_URL
-        sync: false
+        value: https://go2.unisender.ru/ru/transactional/api/v1
       - key: MAIL_FROM
         sync: false
       - key: BREVO_API_KEY

@@ -63,12 +63,57 @@ export class MailService {
   }
 
   private resolveFromEmail(): string | null {
+    const mailFrom = this.config.get<string>('MAIL_FROM')?.trim();
+    const ownerEmail = this.config.get<string>('OWNER_EMAIL')?.trim();
+    const smtpUser = this.config.get<string>('SMTP_USER')?.trim();
+
+    if (mailFrom) {
+      return mailFrom;
+    }
+    if (ownerEmail) {
+      return ownerEmail;
+    }
+    // Unisender Go: SMTP_USER — числовой логин, не email
+    if (smtpUser?.includes('@')) {
+      return smtpUser;
+    }
+    return null;
+  }
+
+  private isUnisenderConfigured(): boolean {
+    const host = this.config.get<string>('SMTP_HOST')?.trim() ?? '';
     return (
-      this.config.get<string>('MAIL_FROM')?.trim() ||
-      this.config.get<string>('SMTP_USER')?.trim() ||
-      this.config.get<string>('OWNER_EMAIL')?.trim() ||
-      null
+      Boolean(this.config.get<string>('UNISENDER_API_KEY')?.trim()) ||
+      host.includes('unisender.ru')
     );
+  }
+
+  private resolveUnisenderApiKey(): string | null {
+    const explicit = this.config.get<string>('UNISENDER_API_KEY')?.trim();
+    if (explicit) {
+      return explicit;
+    }
+    const host = this.config.get<string>('SMTP_HOST')?.trim() ?? '';
+    const pass = this.config.get<string>('SMTP_PASS')?.trim();
+    if (host.includes('unisender.ru') && pass) {
+      return pass;
+    }
+    return null;
+  }
+
+  private resolveUnisenderApiUrl(): string {
+    const explicit = this.config.get<string>('UNISENDER_API_URL')?.trim();
+    if (explicit) {
+      return explicit;
+    }
+    const host = this.config.get<string>('SMTP_HOST')?.trim() ?? '';
+    if (host.includes('go2.')) {
+      return 'https://go2.unisender.ru/ru/transactional/api/v1';
+    }
+    if (host.includes('go1.')) {
+      return 'https://go1.unisender.ru/ru/transactional/api/v1';
+    }
+    return 'https://goapi.unisender.ru/ru/transactional/api/v1';
   }
 
   private resolveSmtpOptions(): SMTPTransport.Options | null {
@@ -119,7 +164,7 @@ export class MailService {
       throw new ServiceUnavailableException({
         ok: false,
         message:
-          'SMTP-сервер не ответил. Для Яндекс.Почты: SMTP_HOST=smtp.yandex.ru, SMTP_PORT=465, SMTP_SECURE=true.',
+          'SMTP-сервер не ответил. Для Unisender Go: SMTP_HOST=smtp.go2.unisender.ru, SMTP_PORT=587, SMTP_SECURE=false.',
       });
     }
 
@@ -131,7 +176,7 @@ export class MailService {
       throw new ServiceUnavailableException({
         ok: false,
         message:
-          'Ошибка входа в Яндекс.Почту. Создайте пароль приложения (id.yandex.ru → Безопасность → Пароли приложений) и включите «Почта» в настройках ящика. Обычный пароль не подойдёт.',
+          'Ошибка входа в Unisender Go SMTP. Проверьте SMTP_USER (логин) и SMTP_PASS в настройках go2.unisender.ru.',
       });
     }
 
@@ -142,7 +187,7 @@ export class MailService {
       message.includes('timeout')
     ) {
       const renderHint = process.env.RENDER
-        ? ' Render Free блокирует SMTP (порты 465/587). Добавьте UNISENDER_API_KEY в Environment.'
+        ? ' Render Free блокирует SMTP (порт 587). На Render используется HTTP API Unisender Go — задайте UNISENDER_API_KEY (тот же пароль, что SMTP_PASS).'
         : '';
 
       throw new ServiceUnavailableException({
@@ -267,24 +312,35 @@ export class MailService {
   async sendContactEmails(data: ContactPayload): Promise<void> {
     const ownerEmail = this.config.get<string>('OWNER_EMAIL')?.trim();
     const fromEmail = this.resolveFromEmail();
-    const unisenderKey = this.config.get<string>('UNISENDER_API_KEY')?.trim();
-    const unisenderApiUrl = this.config.get<string>('UNISENDER_API_URL')?.trim();
+    const unisenderKey = this.resolveUnisenderApiKey();
+    const unisenderApiUrl = this.resolveUnisenderApiUrl();
     const brevoKey = this.config.get<string>('BREVO_API_KEY')?.trim();
 
     if (!ownerEmail || !fromEmail) {
       throw new ServiceUnavailableException({
         ok: false,
         message:
-          'Почтовый сервис не настроен. Укажите OWNER_EMAIL и SMTP_USER (или MAIL_FROM).',
+          'Почтовый сервис не настроен. Укажите MAIL_FROM и OWNER_EMAIL.',
       });
     }
 
     const payload = this.buildMailPayload(data, ownerEmail, fromEmail);
 
-    if (unisenderKey) {
+    // Render Free блокирует SMTP — Unisender Go через HTTPS
+    if (process.env.RENDER && this.isUnisenderConfigured() && unisenderKey) {
+      this.logger.log('Mail transport: Unisender Go (HTTPS, Render)');
+      try {
+        await sendViaUnisender(unisenderKey, payload, unisenderApiUrl);
+      } catch (error) {
+        this.handleUnisenderError(error);
+      }
+      return;
+    }
+
+    if (this.config.get<string>('UNISENDER_API_KEY')?.trim()) {
       this.logger.log('Mail transport: Unisender Go (HTTPS)');
       try {
-        await sendViaUnisender(unisenderKey, payload, unisenderApiUrl || undefined);
+        await sendViaUnisender(unisenderKey!, payload, unisenderApiUrl);
       } catch (error) {
         this.handleUnisenderError(error);
       }
