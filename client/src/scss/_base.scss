@@ -1,0 +1,104 @@
+@use 'sass:color';
+@use 'variables' as *;
+@use 'mixins' as *;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: $font-sans;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: $color-text;
+  background: $color-bg;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba($color-accent-2, 0.15), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 50%, rgba($color-accent, 0.08), transparent);
+  min-height: 100vh;
+
+  &.nav-open {
+    overflow: hidden;
+  }
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: $color-accent;
+  text-decoration: none;
+  transition: color 0.2s;
+
+  &:hover {
+    color: color.adjust($color-accent, $lightness: 8%);
+  }
+
+  @include focus-ring;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  margin: 0 0 0.5em;
+}
+
+p {
+  margin: 0 0 1em;
+  color: $color-muted;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.container {
+  @include container;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 9999;
+  padding: 0.75rem 1rem;
+  background: $color-accent;
+  color: $color-bg;
+
+  &:focus {
+    left: 1rem;
+    top: 1rem;
+  }
+}
+
+.text-gradient {
+  background: linear-gradient(120deg, $color-accent, $color-accent-2);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $color-accent;
+  margin: 0 0 0.75rem;
+}

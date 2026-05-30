@@ -1,0 +1,102 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+.hero {
+  padding: 4rem 0 5rem;
+
+  @media (min-width: $bp-lg) {
+    padding: 5rem 0 6rem;
+  }
+
+  &__grid {
+    @include container;
+    display: grid;
+    gap: 3rem;
+    align-items: center;
+
+    @media (min-width: $bp-lg) {
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 4rem;
+    }
+  }
+
+  &__title {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    color: $color-text;
+    margin-bottom: 1rem;
+  }
+
+  &__lead {
+    font-size: 1.125rem;
+    max-width: 36ch;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 2rem 0;
+  }
+
+  &__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid $color-border;
+
+    li {
+      color: $color-muted;
+      font-size: 0.9375rem;
+    }
+
+    strong {
+      display: block;
+      font-size: 1.25rem;
+      color: $color-text;
+      margin-bottom: 0.15rem;
+    }
+  }
+}
+
+.code-card {
+  @include card-surface;
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+
+  &__bar {
+    display: flex;
+    gap: 6px;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.25);
+    border-bottom: 1px solid $color-border;
+
+    span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: $color-border;
+
+      &:nth-child(1) {
+        background: #f87171;
+      }
+      &:nth-child(2) {
+        background: #fbbf24;
+      }
+      &:nth-child(3) {
+        background: #4ade80;
+      }
+    }
+  }
+
+  &__body {
+    margin: 0;
+    padding: 1.25rem 1.5rem;
+    font-family: $font-mono;
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    color: $color-accent;
+    overflow-x: auto;
+  }
+}

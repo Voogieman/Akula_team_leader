@@ -1,0 +1,25 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+.footer {
+  padding: 2rem 0;
+  border-top: 1px solid $color-border;
+
+  &__inner {
+    @include container;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: $color-muted;
+
+    a {
+      color: $color-muted;
+
+      &:hover {
+        color: $color-accent;
+      }
+    }
+  }
+}

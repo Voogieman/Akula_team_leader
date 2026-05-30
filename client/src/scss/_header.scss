@@ -1,0 +1,111 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: $header-h;
+  border-bottom: 1px solid transparent;
+  transition: background 0.25s, border-color 0.25s, backdrop-filter 0.25s;
+
+  &--scrolled {
+    background: rgba($color-bg, 0.85);
+    backdrop-filter: blur(12px);
+    border-color: $color-border;
+  }
+
+  &__inner {
+    @include container;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+  }
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: $color-text;
+  font-weight: 700;
+
+  &__mark {
+    font-family: $font-mono;
+    color: $color-accent;
+    font-size: 1.125rem;
+  }
+}
+
+.nav-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: $color-text;
+    border-radius: 1px;
+    transition: transform 0.25s, opacity 0.25s;
+  }
+
+  @media (min-width: $bp-md) {
+    display: none;
+  }
+}
+
+.nav {
+  @media (max-width: ($bp-md - 1px)) {
+    position: fixed;
+    inset: $header-h 0 0 0;
+    background: rgba($color-bg, 0.98);
+    padding: 2rem;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+
+    &.is-open {
+      transform: translateX(0);
+    }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    @media (min-width: $bp-md) {
+      flex-direction: row;
+      align-items: center;
+      gap: 1.75rem;
+    }
+  }
+
+  &__link {
+    color: $color-muted;
+    font-weight: 500;
+
+    &:hover {
+      color: $color-text;
+    }
+
+    &--cta {
+      color: $color-bg;
+      background: linear-gradient(135deg, $color-accent, $color-accent-2);
+      padding: 0.5rem 1rem;
+      border-radius: $radius-sm;
+      font-weight: 600;
+
+      &:hover {
+        color: $color-bg;
+        filter: brightness(1.08);
+      }
+    }
+  }
+}

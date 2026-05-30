@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: dev-landing
+    runtime: node
+    plan: free
+    healthCheckPath: /api/health
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: NODE_ENV=production npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_SECURE
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: OWNER_EMAIL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        value: https://api.proxyapi.ru/openai/v1
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini

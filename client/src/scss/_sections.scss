@@ -1,0 +1,199 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+.section {
+  padding: 4.5rem 0;
+
+  &--alt {
+    background: rgba($color-bg-alt, 0.6);
+    border-block: 1px solid $color-border;
+  }
+
+  &__header {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 3rem;
+
+    &--left {
+      text-align: left;
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+
+  &__title {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    color: $color-text;
+  }
+
+  &__subtitle {
+    margin-top: 0.75rem;
+    font-size: 1rem;
+  }
+}
+
+.cards {
+  display: grid;
+  gap: 1.25rem;
+
+  &--3 {
+    @media (min-width: $bp-md) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  &--2 {
+    @media (min-width: $bp-md) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+}
+
+.card {
+  @include card-surface;
+  padding: 1.5rem;
+
+  &__title {
+    font-size: 1.125rem;
+    color: $color-text;
+    margin-bottom: 1rem;
+  }
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  li {
+    font-size: 0.8125rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: $radius-sm;
+    background: rgba($color-accent, 0.1);
+    color: $color-accent;
+    border: 1px solid rgba($color-accent, 0.2);
+  }
+
+  &--sm li {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+.check-list li {
+  position: relative;
+  padding-left: 1.35rem;
+  margin-bottom: 0.5rem;
+  color: $color-muted;
+
+  &::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: $color-accent;
+    font-weight: 700;
+  }
+}
+
+.timeline {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  &__item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.25rem;
+    align-items: start;
+
+    h3 {
+      color: $color-text;
+      font-size: 1.125rem;
+    }
+  }
+
+  &__step {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $color-accent, $color-accent-2);
+    color: $color-bg;
+    font-weight: 700;
+    font-size: 0.9375rem;
+  }
+}
+
+.project-card {
+  @include card-surface;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: transform 0.2s, border-color 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: rgba($color-accent, 0.35);
+  }
+
+  &__meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8125rem;
+    color: $color-muted;
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    color: $color-text;
+
+    a {
+      color: inherit;
+      text-decoration: none;
+
+      &:hover {
+        color: $color-accent;
+      }
+    }
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $color-accent;
+
+    &::after {
+      content: '→';
+      transition: transform 0.2s;
+    }
+
+    &:hover::after {
+      transform: translateX(3px);
+    }
+  }
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba($color-accent, 0.15);
+  color: $color-accent;
+
+  &--muted {
+    background: rgba($color-muted, 0.15);
+    color: $color-muted;
+  }
+}

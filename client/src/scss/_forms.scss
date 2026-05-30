@@ -1,0 +1,211 @@
+@use 'sass:color';
+@use 'variables' as *;
+@use 'mixins' as *;
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.35rem;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border-radius: $radius-sm;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s, filter 0.2s, opacity 0.2s;
+  @include focus-ring;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    color: $color-bg;
+    background: linear-gradient(135deg, $color-accent, $color-accent-2);
+  }
+
+  &--ghost {
+    color: $color-text;
+    background: transparent;
+    border: 1px solid $color-border;
+
+    &:hover {
+      border-color: $color-accent;
+      color: $color-accent;
+    }
+  }
+
+  &--block {
+    width: 100%;
+  }
+
+  &__loader {
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 2px solid rgba($color-bg, 0.3);
+    border-top-color: $color-bg;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+
+  &__label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $color-text;
+  }
+
+  &__input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-family: inherit;
+    font-size: 1rem;
+    color: $color-text;
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    @include focus-ring;
+
+    &::placeholder {
+      color: color.adjust($color-muted, $lightness: -5%);
+    }
+
+    &:focus {
+      border-color: $color-accent;
+      box-shadow: 0 0 0 3px rgba($color-accent, 0.15);
+    }
+
+    &--area {
+      resize: vertical;
+      min-height: 120px;
+    }
+  }
+
+  &__error {
+    font-size: 0.8125rem;
+    color: $color-error;
+    min-height: 1.25em;
+  }
+
+  &--invalid .field__input {
+    border-color: $color-error;
+    box-shadow: 0 0 0 3px rgba($color-error, 0.12);
+  }
+}
+
+.alert {
+  margin-top: 1rem;
+  padding: 0.875rem 1rem;
+  border-radius: $radius-sm;
+  font-size: 0.9375rem;
+  font-weight: 500;
+
+  &--success {
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+    border: 1px solid rgba($color-success, 0.3);
+  }
+
+  &--error {
+    background: rgba($color-error, 0.12);
+    color: $color-error;
+    border: 1px solid rgba($color-error, 0.3);
+  }
+}
+
+.contact-grid {
+  display: grid;
+  gap: 2.5rem;
+
+  @media (min-width: $bp-lg) {
+    grid-template-columns: 1fr 1.1fr;
+    gap: 4rem;
+    align-items: start;
+  }
+}
+
+.contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  a {
+    font-weight: 500;
+  }
+
+  span:not(.contact-list__label) {
+    color: $color-text;
+    font-weight: 500;
+  }
+
+  &__label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-muted;
+    margin-bottom: 0.25rem;
+  }
+}
+
+.contact-form {
+  @include card-surface;
+  padding: 1.75rem;
+}
+
+.ai-section {
+  max-width: 640px;
+  margin-inline: auto;
+}
+
+.ai-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  @media (min-width: $bp-md) {
+    flex-direction: row;
+    align-items: flex-end;
+
+    .field {
+      flex: 1;
+      margin-bottom: 0;
+    }
+  }
+}
+
+.ai-result {
+  @include card-surface;
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.5rem;
+
+  &__title {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-accent;
+    margin-bottom: 0.75rem;
+  }
+
+  &__text {
+    color: $color-text;
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+}
