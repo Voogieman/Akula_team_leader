@@ -10,24 +10,18 @@ services:
       - key: NODE_ENV
         value: production
       - key: SMTP_HOST
-        sync: false
+        value: smtp.go2.unisender.ru
       - key: SMTP_PORT
-        sync: false
+        value: "587"
       - key: SMTP_SECURE
-        sync: false
+        value: "false"
       - key: SMTP_USER
         sync: false
       - key: SMTP_PASS
         sync: false
-      - key: OWNER_EMAIL
-        sync: false
-      - key: UNISENDER_API_KEY
-        sync: false
-      - key: UNISENDER_API_URL
-        value: https://go2.unisender.ru/ru/transactional/api/v1
       - key: MAIL_FROM
         sync: false
-      - key: BREVO_API_KEY
+      - key: OWNER_EMAIL
         sync: false
       - key: OPENAI_API_KEY
         sync: false

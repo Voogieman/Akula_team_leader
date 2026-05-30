@@ -3,9 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import nodemailer from 'nodemailer';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import type { ContactPayload } from '../schemas/contact.schema';
-import { sendViaBrevo } from './brevo-mail.sender';
-import type { MailPayload } from './mail-payload';
-import { sendViaUnisender } from './unisender-mail.sender';
 
 @Injectable()
 export class MailService {
@@ -21,47 +18,6 @@ export class MailService {
       .replace(/"/g, '&quot;');
   }
 
-  private buildMailPayload(
-    data: ContactPayload,
-    ownerEmail: string,
-    fromEmail: string,
-  ): MailPayload {
-    const { name, phone, email, comment } = data;
-    const safeName = this.escapeHtml(name);
-    const safePhone = this.escapeHtml(phone);
-    const safeEmail = this.escapeHtml(email);
-    const safeComment = this.escapeHtml(comment).replace(/\n/g, '<br>');
-
-    return {
-      fromName: 'Вугар Гулиев — портфолио',
-      fromEmail,
-      ownerEmail,
-      userEmail: email,
-      subjectOwner: `Новая заявка от ${name}`,
-      subjectUser: 'Копия вашего обращения',
-      ownerHtml: `
-      <h2>Новая заявка с сайта</h2>
-      <p><strong>Имя:</strong> ${safeName}</p>
-      <p><strong>Телефон:</strong> ${safePhone}</p>
-      <p><strong>Email:</strong> ${safeEmail}</p>
-      <p><strong>Комментарий:</strong></p>
-      <p>${safeComment}</p>
-    `,
-      userHtml: `
-      <h2>Спасибо за обращение, ${safeName}!</h2>
-      <p>Мы получили ваше сообщение и свяжемся с вами в ближайшее время.</p>
-      <hr>
-      <p><strong>Ваши данные:</strong></p>
-      <p>Телефон: ${safePhone}</p>
-      <p>Email: ${safeEmail}</p>
-      <p><strong>Комментарий:</strong></p>
-      <p>${safeComment}</p>
-    `,
-      ownerText: `Имя: ${name}\nТелефон: ${phone}\nEmail: ${email}\n\n${comment}`,
-      userText: `Спасибо, ${name}!\n\nМы получили ваше сообщение.\n\n${comment}`,
-    };
-  }
-
   private resolveFromEmail(): string | null {
     const mailFrom = this.config.get<string>('MAIL_FROM')?.trim();
     const ownerEmail = this.config.get<string>('OWNER_EMAIL')?.trim();
@@ -73,47 +29,10 @@ export class MailService {
     if (ownerEmail) {
       return ownerEmail;
     }
-    // Unisender Go: SMTP_USER — числовой логин, не email
     if (smtpUser?.includes('@')) {
       return smtpUser;
     }
     return null;
-  }
-
-  private isUnisenderConfigured(): boolean {
-    const host = this.config.get<string>('SMTP_HOST')?.trim() ?? '';
-    return (
-      Boolean(this.config.get<string>('UNISENDER_API_KEY')?.trim()) ||
-      host.includes('unisender.ru')
-    );
-  }
-
-  private resolveUnisenderApiKey(): string | null {
-    const explicit = this.config.get<string>('UNISENDER_API_KEY')?.trim();
-    if (explicit) {
-      return explicit;
-    }
-    const host = this.config.get<string>('SMTP_HOST')?.trim() ?? '';
-    const pass = this.config.get<string>('SMTP_PASS')?.trim();
-    if (host.includes('unisender.ru') && pass) {
-      return pass;
-    }
-    return null;
-  }
-
-  private resolveUnisenderApiUrl(): string {
-    const explicit = this.config.get<string>('UNISENDER_API_URL')?.trim();
-    if (explicit) {
-      return explicit;
-    }
-    const host = this.config.get<string>('SMTP_HOST')?.trim() ?? '';
-    if (host.includes('go2.')) {
-      return 'https://go2.unisender.ru/ru/transactional/api/v1';
-    }
-    if (host.includes('go1.')) {
-      return 'https://go1.unisender.ru/ru/transactional/api/v1';
-    }
-    return 'https://goapi.unisender.ru/ru/transactional/api/v1';
   }
 
   private resolveSmtpOptions(): SMTPTransport.Options | null {
@@ -125,9 +44,8 @@ export class MailService {
       return null;
     }
 
-    const port = Number(this.config.get('SMTP_PORT') ?? 465);
+    const port = Number(this.config.get('SMTP_PORT') ?? 587);
     const secureSetting = this.config.get<string>('SMTP_SECURE')?.trim().toLowerCase();
-
     const secure =
       secureSetting === 'true' ||
       (secureSetting !== 'false' && port === 465);
@@ -164,7 +82,7 @@ export class MailService {
       throw new ServiceUnavailableException({
         ok: false,
         message:
-          'SMTP-сервер не ответил. Для Unisender Go: SMTP_HOST=smtp.go2.unisender.ru, SMTP_PORT=587, SMTP_SECURE=false.',
+          'SMTP-сервер не ответил. Unisender Go: SMTP_HOST=smtp.go2.unisender.ru, SMTP_PORT=587, SMTP_SECURE=false.',
       });
     }
 
@@ -176,7 +94,7 @@ export class MailService {
       throw new ServiceUnavailableException({
         ok: false,
         message:
-          'Ошибка входа в Unisender Go SMTP. Проверьте SMTP_USER (логин) и SMTP_PASS в настройках go2.unisender.ru.',
+          'Ошибка входа в SMTP. Проверьте SMTP_USER (логин) и SMTP_PASS в Unisender Go.',
       });
     }
 
@@ -186,13 +104,10 @@ export class MailService {
       message.includes('ENOTFOUND') ||
       message.includes('timeout')
     ) {
-      const renderHint = process.env.RENDER
-        ? ' Render Free блокирует SMTP (порт 587). На Render используется HTTP API Unisender Go — задайте UNISENDER_API_KEY (тот же пароль, что SMTP_PASS).'
-        : '';
-
       throw new ServiceUnavailableException({
         ok: false,
-        message: `Не удалось подключиться к почтовому серверу. Проверьте SMTP_HOST, порт и интернет-соединение.${renderHint}`,
+        message:
+          'Не удалось подключиться к почтовому серверу. Проверьте SMTP_HOST, порт и интернет-соединение.',
       });
     }
 
@@ -210,72 +125,16 @@ export class MailService {
     });
   }
 
-  private handleUnisenderError(error: unknown): never {
-    const message = error instanceof Error ? error.message : String(error);
-    this.logger.error(message);
-
-    if (message.includes('401') || message.includes('403')) {
-      throw new ServiceUnavailableException({
-        ok: false,
-        message:
-          'Неверный UNISENDER_API_KEY. Проверьте ключ в личном кабинете Unisender Go.',
-      });
-    }
-
-    if (
-      message.includes('from_email') ||
-      message.includes('sender') ||
-      message.includes('domain')
-    ) {
-      throw new ServiceUnavailableException({
-        ok: false,
-        message:
-          'Email или домен отправителя не подтверждён в Unisender Go. Проверьте MAIL_FROM и настройки отправителя.',
-      });
-    }
-
-    throw new ServiceUnavailableException({
-      ok: false,
-      message: 'Не удалось отправить письмо через Unisender Go. Попробуйте позже.',
-    });
-  }
-
-  private handleBrevoError(error: unknown): never {
-    const message = error instanceof Error ? error.message : String(error);
-    this.logger.error(message);
-
-    if (message.includes('401') || message.includes('unauthorized')) {
-      throw new ServiceUnavailableException({
-        ok: false,
-        message: 'Неверный BREVO_API_KEY. Проверьте ключ в Environment на Render.',
-      });
-    }
-
-    if (
-      message.includes('sender') ||
-      message.includes('not verified') ||
-      message.includes('invalid')
-    ) {
-      throw new ServiceUnavailableException({
-        ok: false,
-        message:
-          'Email отправителя не подтверждён в Brevo. Подтвердите MAIL_FROM (или SMTP_USER) в личном кабинете Brevo → Senders.',
-      });
-    }
-
-    throw new ServiceUnavailableException({
-      ok: false,
-      message: 'Не удалось отправить письмо через Brevo. Попробуйте позже.',
-    });
-  }
-
-  private async sendViaSmtp(payload: MailPayload): Promise<void> {
+  async sendContactEmails(data: ContactPayload): Promise<void> {
     const transporter = this.getTransporter();
-    if (!transporter) {
+    const ownerEmail = this.config.get<string>('OWNER_EMAIL')?.trim();
+    const fromEmail = this.resolveFromEmail();
+
+    if (!transporter || !ownerEmail || !fromEmail) {
       throw new ServiceUnavailableException({
         ok: false,
         message:
-          'Почтовый сервис не настроен. Свяжитесь с администратором сайта.',
+          'Почтовый сервис не настроен. Укажите SMTP_*, MAIL_FROM и OWNER_EMAIL.',
       });
     }
 
@@ -285,79 +144,55 @@ export class MailService {
       this.handleSmtpError(error);
     }
 
-    const from = `"${payload.fromName}" <${payload.fromEmail}>`;
+    const { name, phone, email, comment } = data;
+    const safeName = this.escapeHtml(name);
+    const safePhone = this.escapeHtml(phone);
+    const safeEmail = this.escapeHtml(email);
+    const safeComment = this.escapeHtml(comment).replace(/\n/g, '<br>');
+
+    const ownerHtml = `
+      <h2>Новая заявка с сайта</h2>
+      <p><strong>Имя:</strong> ${safeName}</p>
+      <p><strong>Телефон:</strong> ${safePhone}</p>
+      <p><strong>Email:</strong> ${safeEmail}</p>
+      <p><strong>Комментарий:</strong></p>
+      <p>${safeComment}</p>
+    `;
+
+    const userHtml = `
+      <h2>Спасибо за обращение, ${safeName}!</h2>
+      <p>Мы получили ваше сообщение и свяжемся с вами в ближайшее время.</p>
+      <hr>
+      <p><strong>Ваши данные:</strong></p>
+      <p>Телефон: ${safePhone}</p>
+      <p>Email: ${safeEmail}</p>
+      <p><strong>Комментарий:</strong></p>
+      <p>${safeComment}</p>
+    `;
+
+    const from = `"Вугар Гулиев — портфолио" <${fromEmail}>`;
+
+    this.logger.log(`Mail transport: SMTP (${this.config.get('SMTP_HOST')})`);
 
     try {
       await transporter.sendMail({
         from,
-        to: payload.ownerEmail,
-        replyTo: payload.userEmail,
-        subject: payload.subjectOwner,
-        html: payload.ownerHtml,
-        text: payload.ownerText,
+        to: ownerEmail,
+        replyTo: email,
+        subject: `Новая заявка от ${name}`,
+        html: ownerHtml,
+        text: `Имя: ${name}\nТелефон: ${phone}\nEmail: ${email}\n\n${comment}`,
       });
 
       await transporter.sendMail({
         from,
-        to: payload.userEmail,
-        subject: payload.subjectUser,
-        html: payload.userHtml,
-        text: payload.userText,
+        to: email,
+        subject: 'Копия вашего обращения',
+        html: userHtml,
+        text: `Спасибо, ${name}!\n\nМы получили ваше сообщение.\n\n${comment}`,
       });
     } catch (error) {
       this.handleSmtpError(error);
     }
-  }
-
-  async sendContactEmails(data: ContactPayload): Promise<void> {
-    const ownerEmail = this.config.get<string>('OWNER_EMAIL')?.trim();
-    const fromEmail = this.resolveFromEmail();
-    const unisenderKey = this.resolveUnisenderApiKey();
-    const unisenderApiUrl = this.resolveUnisenderApiUrl();
-    const brevoKey = this.config.get<string>('BREVO_API_KEY')?.trim();
-
-    if (!ownerEmail || !fromEmail) {
-      throw new ServiceUnavailableException({
-        ok: false,
-        message:
-          'Почтовый сервис не настроен. Укажите MAIL_FROM и OWNER_EMAIL.',
-      });
-    }
-
-    const payload = this.buildMailPayload(data, ownerEmail, fromEmail);
-
-    // Render Free блокирует SMTP — Unisender Go через HTTPS
-    if (process.env.RENDER && this.isUnisenderConfigured() && unisenderKey) {
-      this.logger.log('Mail transport: Unisender Go (HTTPS, Render)');
-      try {
-        await sendViaUnisender(unisenderKey, payload, unisenderApiUrl);
-      } catch (error) {
-        this.handleUnisenderError(error);
-      }
-      return;
-    }
-
-    if (this.config.get<string>('UNISENDER_API_KEY')?.trim()) {
-      this.logger.log('Mail transport: Unisender Go (HTTPS)');
-      try {
-        await sendViaUnisender(unisenderKey!, payload, unisenderApiUrl);
-      } catch (error) {
-        this.handleUnisenderError(error);
-      }
-      return;
-    }
-
-    if (brevoKey) {
-      this.logger.log('Mail transport: Brevo (HTTPS)');
-      try {
-        await sendViaBrevo(brevoKey, payload);
-      } catch (error) {
-        this.handleBrevoError(error);
-      }
-      return;
-    }
-
-    this.logger.log('Mail transport: SMTP');
-    await this.sendViaSmtp(payload);
   }
 }
