@@ -3,7 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import nodemailer from 'nodemailer';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import type { ContactPayload } from '../schemas/contact.schema';
-import { sendViaBrevo, type MailPayload } from './brevo-mail.sender';
+import { sendViaBrevo } from './brevo-mail.sender';
+import type { MailPayload } from './mail-payload';
+import { sendViaUnisender } from './unisender-mail.sender';
 
 @Injectable()
 export class MailService {
@@ -140,7 +142,7 @@ export class MailService {
       message.includes('timeout')
     ) {
       const renderHint = process.env.RENDER
-        ? ' Render Free блокирует SMTP (порты 465/587). Добавьте BREVO_API_KEY в Environment или переведите сервис на платный тариф Render.'
+        ? ' Render Free блокирует SMTP (порты 465/587). Добавьте UNISENDER_API_KEY в Environment.'
         : '';
 
       throw new ServiceUnavailableException({
@@ -160,6 +162,36 @@ export class MailService {
     throw new ServiceUnavailableException({
       ok: false,
       message: 'Не удалось отправить письмо. Попробуйте позже или проверьте SMTP в .env.',
+    });
+  }
+
+  private handleUnisenderError(error: unknown): never {
+    const message = error instanceof Error ? error.message : String(error);
+    this.logger.error(message);
+
+    if (message.includes('401') || message.includes('403')) {
+      throw new ServiceUnavailableException({
+        ok: false,
+        message:
+          'Неверный UNISENDER_API_KEY. Проверьте ключ в личном кабинете Unisender Go.',
+      });
+    }
+
+    if (
+      message.includes('from_email') ||
+      message.includes('sender') ||
+      message.includes('domain')
+    ) {
+      throw new ServiceUnavailableException({
+        ok: false,
+        message:
+          'Email или домен отправителя не подтверждён в Unisender Go. Проверьте MAIL_FROM и настройки отправителя.',
+      });
+    }
+
+    throw new ServiceUnavailableException({
+      ok: false,
+      message: 'Не удалось отправить письмо через Unisender Go. Попробуйте позже.',
     });
   }
 
@@ -235,6 +267,8 @@ export class MailService {
   async sendContactEmails(data: ContactPayload): Promise<void> {
     const ownerEmail = this.config.get<string>('OWNER_EMAIL')?.trim();
     const fromEmail = this.resolveFromEmail();
+    const unisenderKey = this.config.get<string>('UNISENDER_API_KEY')?.trim();
+    const unisenderApiUrl = this.config.get<string>('UNISENDER_API_URL')?.trim();
     const brevoKey = this.config.get<string>('BREVO_API_KEY')?.trim();
 
     if (!ownerEmail || !fromEmail) {
@@ -247,7 +281,18 @@ export class MailService {
 
     const payload = this.buildMailPayload(data, ownerEmail, fromEmail);
 
+    if (unisenderKey) {
+      this.logger.log('Mail transport: Unisender Go (HTTPS)');
+      try {
+        await sendViaUnisender(unisenderKey, payload, unisenderApiUrl || undefined);
+      } catch (error) {
+        this.handleUnisenderError(error);
+      }
+      return;
+    }
+
     if (brevoKey) {
+      this.logger.log('Mail transport: Brevo (HTTPS)');
       try {
         await sendViaBrevo(brevoKey, payload);
       } catch (error) {
@@ -256,6 +301,7 @@ export class MailService {
       return;
     }
 
+    this.logger.log('Mail transport: SMTP');
     await this.sendViaSmtp(payload);
   }
 }
